@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>สต็อกยา (ติดตั้งบน iPhone ได้)</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="สต็อกยา">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    :root{--bg:#0f172a; --panel:#111827; --text:#e5e7eb; --sub:#9ca3af; --chip:#334155; --green:#0f3b23; --amber:#3a2a10; --red:#3a1214; --blue:#0d254a;}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Prompt,sans-serif;background:linear-gradient(180deg,var(--bg),#0b1024);color:var(--text)}
+    .container{max-width:1100px;margin:24px auto;padding:0 16px}
+    header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .title{font-size:clamp(20px,3vw,28px);font-weight:800}.subtitle{color:var(--sub);font-size:12px}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.02));border:1px solid #1f2937;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px}
+    input[type=search]{flex:1 1 220px;background:#0b1229;color:var(--text);border:1px solid #1f2937;border-radius:12px;padding:10px 12px;outline:none}
+    .btn{border:1px solid #26324a;background:#0e1630;color:#cbd5e1;border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer;transition:.15s}
+    .btn:hover{background:#162245;transform:translateY(-1px)} .btn.brand{border-color:#155e31;background:#0f2b1c;color:#bbf7d0}
+    .btn.brand:hover{background:#123521} .btn.ghost{background:transparent;border-color:#2a354d} .btn.danger{border-color:#4c1d1d;background:#220b0b;color:#fecaca}
+    .grid{overflow:auto} table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:10px 12px;border-bottom:1px solid #1f2937;text-align:left} thead th{position:sticky;top:0;background:#0b1229;z-index:1}
+    tbody tr:hover{background:rgba(255,255,255,.03)} .qty{font-variant-numeric:tabular-nums}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:var(--chip);font-size:12px}
+    .chip.green{background:var(--green);color:#86efac} .chip.red{background:var(--red);color:#fecaca} .chip.amber{background:var(--amber);color:#fde68a} .chip.blue{background:var(--blue);color:#bfdbfe}
+    .row-actions{display:flex;gap:6px;flex-wrap:wrap} .muted{color:var(--sub)}
+    .footer{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 12px;color:#94a3b8}
+    dialog{border:none;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 24px);background:#0b1229;color:#e5e7eb}
+    dialog::backdrop{background:rgba(0,0,0,.6)} .dlg-head{padding:14px 16px;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center}
+    .dlg-body{padding:14px 16px} .dlg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px} .dlg-grid>label{display:flex;flex-direction:column;gap:6px}
+    input,select,textarea{background:#071024;border:1px solid #1f2937;color:#e5e7eb;border-radius:10px;padding:10px} textarea{min-height:70px}
+    .dlg-foot{padding:14px 16px;border-top:1px solid #1f2937;display:flex;justify-content:flex-end;gap:8px} .pill{border:1px dashed #334155;border-radius:999px;padding:6px 10px}
+    .nowrap{white-space:nowrap} .toast{position:fixed;right:16px;bottom:16px;background:#0b1229;border:1px solid #1f2937;color:#e5e7eb;border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.3);display:none}
+    .toast.show{display:block}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="title">💊 ระบบสต็อกยา (PWA)</div>
+        <div class="subtitle">ข้อมูลเก็บใน Google Sheets ผ่าน Apps Script Web API • ติดตั้งบน iPhone ได้</div>
+      </div>
+      <div id="updateBanner" style="display:none;border:1px solid #374151;border-radius:12px;padding:6px 10px">
+        มีเวอร์ชันใหม่ พร้อมใช้งาน <button class="btn brand" onclick="location.reload()">รีเฟรช</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="🔎 ค้นหาชื่อยา / รหัสยา..." />
+        <button class="btn brand" id="btnAdd">＋ เพิ่มยา</button>
+        <button class="btn" id="btnExport">ส่งออกจากชีต</button>
+        <button class="btn ghost" id="btnPrint">พิมพ์</button>
+      </div>
+      <div class="grid">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="nowrap">รหัส</th>
+              <th>ชื่อยา</th>
+              <th>หน่วย</th>
+              <th>ล็อต/ผลิต</th>
+              <th class="nowrap">หมดอายุ</th>
+              <th class="nowrap">คงเหลือ</th>
+              <th class="nowrap">จุดสั่งซื้อ</th>
+              <th>สถานะ</th>
+              <th class="nowrap">การทำงาน</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="footer">
+        <div>รวม <span id="countMed">0</span> รายการ • ยาทั้งหมด <span id="sumQty">0</span> หน่วย</div>
+        <div class="muted">PWA: เปิดเร็ว ใช้ออฟไลน์ได้บางส่วน (รายการล่าสุดแคชไว้)</div>
+      </div>
+    </section>
+
+    <!-- dialogs -->
+    <dialog id="dlgMed">
+      <form method="dialog" id="formMed">
+        <div class="dlg-head">
+          <div id="dlgMedTitle">เพิ่มยา</div>
+          <button class="btn ghost" value="cancel" type="submit">ปิด</button>
+        </div>
+        <div class="dlg-body">
+          <div class="dlg-grid">
+            <label>รหัสยา <input id="medCode" required /></label>
+            <label>ชื่อยา <input id="medName" required /></label>
+            <label>หน่วย <input id="medUnit" placeholder="เม็ด" /></label>
+            <label>ล็อต/เลขที่ผลิต <input id="medLot" /></label>
+            <label>วันหมดอายุ <input id="medExp" type="date" /></label>
+            <label>จำนวนเริ่มต้น <input id="medStartQty" type="number" step="1" min="0" value="0" required /></label>
+            <label>จุดสั่งซื้อ (ขั้นต่ำ) <input id="medMin" type="number" step="1" min="0" value="0" /></label>
+            <label>หมายเหตุ <input id="medNote" /></label>
+          </div>
+        </div>
+        <div class="dlg-foot">
+          <button class="btn" value="cancel" type="submit">ยกเลิก</button>
+          <button class="btn brand" id="btnSaveMed" type="button">บันทึก</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlgTxn">
+      <form method="dialog" id="formTxn">
+        <div class="dlg-head">
+          <div id="dlgTxnTitle">รับเข้า/จ่ายออก</div>
+          <button class="btn ghost" value="cancel" type="submit">ปิด</button>
+        </div>
+        <div class="dlg-body">
+          <div class="pill" id="txnMedInfo">—</div>
+          <div class="dlg-grid" style="margin-top:10px">
+            <label>ประเภท
+              <select id="txnType">
+                <option value="IN">รับเข้า</option>
+                <option value="OUT">จ่ายออก</option>
+              </select>
+            </label>
+            <label>จำนวน <input id="txnQty" type="number" step="1" min="1" required /></label>
+            <label>วันที่ <input id="txnDate" type="datetime-local" /></label>
+            <label>อ้างอิง/เลขที่ใบกำกับ <input id="txnRef" /></label>
+            <label style="grid-column:1/-1">หมายเหตุ <textarea id="txnNote"></textarea></label>
+          </div>
+        </div>
+        <div class="dlg-foot">
+          <button class="btn" value="cancel" type="submit">ยกเลิก</button>
+          <button class="btn brand" id="btnDoTxn" type="button">บันทึกการเคลื่อนไหว</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="dlgHistory">
+      <div class="dlg-head">
+        <div>ประวัติการเคลื่อนไหว</div>
+        <button class="btn ghost" id="closeHistory">ปิด</button>
+      </div>
+      <div class="dlg-body">
+        <div class="pill" id="histMedInfo">—</div>
+        <div class="grid" style="margin-top:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>วันที่</th><th>ประเภท</th><th>จำนวน</th><th>คงเหลือหลังทำ</th><th>อ้างอิง</th><th>หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody id="histRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn" id="btnCloseHist">ปิด</button>
+      </div>
+    </dialog>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = sel => document.querySelector(sel);
+  const LS = { key: 'drugStock.cache.v1' };
+  const state = { meds: [], selectedId: null };
+  const fmtInt = n => new Intl.NumberFormat('th-TH', { maximumFractionDigits:0 }).format(n||0);
+  const nowLocalDT = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16) };
+
+  // ---------- CONFIG ----------
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbzNo7XblqDuUgksmsUEVA3vm8ECy_WgCqDQtBzB1BVVudOmG2awINYXgRROHjzkvI_i/exec'; // https://script.google.com/macros/s/.../exec
+  const API_KEY = ''; // ให้ตรงกับฝั่ง Apps Script (หรือ '' เพื่อปิด)
+  // ---------------------------
+
+  function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2200) }
+
+  function computeStatus(m){
+    const now = new Date(); let expAlert = null;
+    if(m.exp){ const exp = new Date(m.exp+'T00:00:00'); const diff = (exp - now)/86400000; if(diff < 0) expAlert = {cls:'red',text:'หมดอายุ'}; else if(diff<=90) expAlert = {cls:'amber',text:'ใกล้หมดอายุ'}; }
+    const low = (m.min||0) > 0 && (m.qty||0) <= (m.min||0);
+    const near = (m.min||0) > 0 && (m.qty||0) <= Math.ceil((m.min||0)*1.2) && !low;
+    return { exp:expAlert, stock: low ? {cls:'red',text:'ต่ำกว่าขั้นต่ำ'} : near ? {cls:'amber',text:'ใกล้ขั้นต่ำ'} : {cls:'green',text:'ปกติ'} };
+  }
+  function statusChips(m){ const s = computeStatus(m); return `<span class="chip ${s.stock.cls}">${s.stock.text}</span>` + (s.exp?` <span class="chip ${s.exp.cls}">${s.exp.text}</span>`:''); }
+
+  async function apiGet(params){ const url = new URL(scriptUrl); if(API_KEY) params.key = API_KEY; Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v)); const res = await fetch(url.toString(), {method:'GET'}); return res.json(); }
+  async function apiPost(body){ if(API_KEY) body.key = API_KEY; const res = await fetch(scriptUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body)}); return res.json(); }
+
+  function render(){
+    const q = $('#search').value.trim().toLowerCase();
+    let meds = [...state.meds];
+    if(q){ meds = meds.filter(m => [m.code,m.name,m.lot,m.unit].filter(Boolean).some(v => String(v).toLowerCase().includes(q))) }
+    meds.sort((a,b)=> String(a.name||'').localeCompare(String(b.name||''), 'th'));
+    $('#rows').innerHTML = meds.map(m => `
+      <tr data-id="${m.id}">
+        <td class="muted">${escapeHtml(m.code||'')}</td>
+        <td><div style="font-weight:700">${escapeHtml(m.name||'')}</div><div class="muted" style="font-size:12px">${escapeHtml(m.note||'')}</div></td>
+        <td>${escapeHtml(m.unit||'')}</td>
+        <td>${escapeHtml(m.lot||'')}</td>
+        <td class="nowrap">${m.exp||''}</td>
+        <td class="qty">${fmtInt(m.qty||0)}</td>
+        <td class="qty">${fmtInt(m.min||0)}</td>
+        <td>${statusChips(m)}</td>
+        <td class="row-actions">
+          <button class="btn" data-act="in">รับเข้า</button>
+          <button class="btn" data-act="out">จ่ายออก</button>
+          <button class="btn ghost" data-act="edit">แก้ไข</button>
+          <button class="btn ghost" data-act="hist">ประวัติ</button>
+          <button class="btn danger" data-act="del">ลบ</button>
+        </td>
+      </tr>
+    `).join('');
+    $('#countMed').textContent = fmtInt(meds.length);
+    $('#sumQty').textContent = fmtInt(meds.reduce((a,b)=>a+(b.qty||0),0));
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[c])) }
+
+  const dlgMed = $('#dlgMed'); let editingId = null;
+  $('#btnAdd').addEventListener('click', () => {
+    editingId = null;
+    $('#dlgMedTitle').textContent = 'เพิ่มยา';
+    $('#medCode').value=''; $('#medName').value=''; $('#medUnit').value='เม็ด';
+    $('#medLot').value=''; $('#medExp').value=''; $('#medStartQty').value=0;
+    $('#medMin').value=0; $('#medNote').value='';
+    dlgMed.showModal();
+  });
+  $('#btnSaveMed').addEventListener('click', async () => {
+    const v = { id: editingId || undefined, code: $('#medCode').value.trim(), name: $('#medName').value.trim(),
+      unit: $('#medUnit').value.trim(), lot: $('#medLot').value.trim(), exp: $('#medExp').value || '',
+      startQty: +$('#medStartQty').value || 0, min: +$('#medMin').value || 0, note: $('#medNote').value.trim() };
+    if(!v.code || !v.name){ alert('กรุณากรอกรหัสยาและชื่อยา'); return }
+    const resp = await apiPost({ action:'upsertMed', med: v }); if(!resp.ok) return alert(resp.error||'บันทึกไม่สำเร็จ');
+    dlgMed.close(); await loadMeds(); toast('บันทึกรายการแล้ว');
+  });
+
+  $('#tbl').addEventListener('click', async (ev) => {
+    const btn = ev.target.closest('button'); if(!btn) return;
+    const tr = ev.target.closest('tr'); const id = tr?.dataset?.id; if(!id) return;
+    const act = btn.dataset.act;
+    if(act==='edit') return onEdit(id);
+    if(act==='del') return onDelete(id);
+    if(act==='in') return openTxn(id,'IN');
+    if(act==='out') return openTxn(id,'OUT');
+    if(act==='hist') return openHistory(id);
+  });
+
+  function onEdit(id){
+    const m = state.meds.find(x=>x.id===id); if(!m) return;
+    editingId = id;
+    $('#dlgMedTitle').textContent='แก้ไขยา';
+    $('#medCode').value=m.code||''; $('#medName').value=m.name||''; $('#medUnit').value=m.unit||'';
+    $('#medLot').value=m.lot||''; $('#medExp').value=m.exp||''; $('#medStartQty').value=m.qty||0;
+    $('#medMin').value=m.min||0; $('#medNote').value=m.note||'';
+    dlgMed.showModal();
+  }
+  async function onDelete(id){
+    const m = state.meds.find(x=>x.id===id); if(!m) return;
+    if(!confirm(`ลบรายการ "${m.name}" และประวัติที่เกี่ยวข้องทั้งหมด?`)) return;
+    const resp = await apiPost({ action:'deleteMed', id }); if(!resp.ok) return alert(resp.error||'ลบไม่สำเร็จ');
+    await loadMeds(); toast('ลบแล้ว');
+  }
+
+  const dlgTxn = $('#dlgTxn'); let txnMedId = null;
+  function openTxn(id,type='IN'){
+    const m = state.meds.find(x=>x.id===id); if(!m) return;
+    txnMedId = id;
+    $('#dlgTxnTitle').textContent = (type==='IN'?'รับเข้า':'จ่ายออก');
+    $('#txnType').value=type; $('#txnQty').value=''; $('#txnDate').value=nowLocalDT();
+    $('#txnRef').value=''; $('#txnNote').value='';
+    $('#txnMedInfo').textContent=`${m.code||'-'} • ${m.name} • คงเหลือ ${fmtInt(m.qty||0)} ${m.unit||''}`;
+    dlgTxn.showModal();
+  }
+  $('#btnDoTxn').addEventListener('click', async () => {
+    const m = state.meds.find(x=>x.id===txnMedId); if(!m) return;
+    const body = { action:'addTxn', txn:{ medId:m.id, type:$('#txnType').value, qty:Math.floor(+$('#txnQty').value||0),
+      date:$('#txnDate').value || new Date().toISOString(), ref:$('#txnRef').value.trim(), note:$('#txnNote').value.trim() } };
+    if(body.txn.qty<=0){ alert('จำนวนต้องมากกว่า 0'); return }
+    const resp = await apiPost(body); if(!resp.ok) return alert(resp.error||'ทำรายการไม่สำเร็จ');
+    dlgTxn.close(); await loadMeds(); toast('บันทึกการเคลื่อนไหวแล้ว');
+  });
+
+  const dlgHistory = $('#dlgHistory'); let histMedId = null;
+  async function openHistory(id){
+    const m = state.meds.find(x=>x.id===id); if(!m) return;
+    histMedId = id; $('#histMedInfo').textContent = `${m.code||'-'} • ${m.name} • คงเหลือ ${fmtInt(m.qty||0)} ${m.unit||''}`;
+    const resp = await apiGet({ action:'listTxns', medId:id }); if(!resp.ok) return alert(resp.error||'โหลดประวัติไม่สำเร็จ');
+    const rows = resp.txns || [];
+    $('#histRows').innerHTML = rows.map(t => `
+      <tr><td class="nowrap">${fmtDT(t.date)}</td>
+      <td>${t.type==='IN' ? '<span class="chip green">รับเข้า</span>' : '<span class="chip blue">จ่ายออก</span>'}</td>
+      <td class="qty">${fmtInt(t.qty)}</td><td class="qty">${fmtInt(t.balance||0)}</td>
+      <td>${escapeHtml(t.ref||'')}</td><td>${escapeHtml(t.note||'')}</td></tr>`).join('') || `<tr><td colspan="6" class="muted">ไม่มีประวัติ</td></tr>`;
+    dlgHistory.showModal();
+  }
+  $('#btnCloseHist, #closeHistory').addEventListener('click', ()=> dlgHistory.close());
+
+  $('#btnExport').addEventListener('click', async () => {
+    const resp = await apiGet({ action:'exportAll' }); if(!resp.ok) return alert(resp.error||'ส่งออกไม่สำเร็จ');
+    downloadJSON(resp, 'drug_stock_backup.json');
+  });
+  function downloadJSON(obj, filename){ const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
+  $('#btnPrint').addEventListener('click', () => window.print());
+  $('#search').addEventListener('input', render);
+  function fmtDT(s){ if(!s) return ''; const d = new Date(s); return d.toLocaleString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) }
+
+  async function loadMeds(){ const resp = await apiGet({ action:'listMeds' }); if(!resp.ok) throw new Error(resp.error||'โหลดข้อมูลไม่สำเร็จ'); state.meds = resp.meds || []; try{localStorage.setItem(LS.key, JSON.stringify(state.meds))}catch(_){} render(); }
+
+  (async () => {
+    try{ const cached = JSON.parse(localStorage.getItem(LS.key) || '[]'); if(Array.isArray(cached) && cached.length){ state.meds = cached; render(); } }catch(_){}
+    try{ await loadMeds(); }catch(err){ console.error(err); toast('เชื่อมต่อชีตไม่สำเร็จ (โหมดออฟไลน์)'); }
+  })();
+
+  // SW register + update banner
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw && nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              document.getElementById('updateBanner').style.display = 'block';
+            }
+          });
+        });
+      }).catch(console.error);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
